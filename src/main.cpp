@@ -113,20 +113,29 @@ void runCuda(){
     //pack geom and material arrays
     geom* geoms = new geom[renderScene->objects.size()];
     material* materials = new material[renderScene->materials.size()];
-    
-    for(int i=0; i<renderScene->objects.size(); i++){
+    PointLight* pointLights = new PointLight[renderScene->pointLights.size()];
+
+    for(unsigned int i=0; i<renderScene->objects.size(); ++i){
       geoms[i] = renderScene->objects[i];
     }
-    for(int i=0; i<renderScene->materials.size(); i++){
+    for(unsigned int i=0; i<renderScene->materials.size(); ++i){
       materials[i] = renderScene->materials[i];
     }
-    
+    for(unsigned int i=0; i<renderScene->pointLights.size(); ++i){
+      pointLights[i].position = renderScene->pointLights[i].position;
+	  pointLights[i].color = renderScene->pointLights[i].color;
+    }
   
     // execute the kernel
-    cudaRaytraceCore(dptr, renderCam, targetFrame, iterations, materials, renderScene->materials.size(), geoms, renderScene->objects.size() );
+    cudaRaytraceCore(dptr, renderCam, targetFrame, iterations, materials, renderScene->materials.size(),
+		geoms, renderScene->objects.size(), pointLights, renderScene->pointLights.size() );
     
     // unmap buffer object
     cudaGLUnmapBufferObject(pbo);
+
+	delete[] geoms;
+	delete[] materials;
+	delete[] pointLights;
   }else{
 
     if(!finishedRender){
@@ -136,12 +145,12 @@ void runCuda(){
       for(int x=0; x<renderCam->resolution.x; x++){
         for(int y=0; y<renderCam->resolution.y; y++){
           int index = x + (y * renderCam->resolution.x);
-          outputImage.writePixelRGB(x,y,renderCam->image[index]);
+          outputImage.writePixelRGB(x,renderCam->resolution.y-y,renderCam->image[index]);
         }
       }
       
       gammaSettings gamma;
-      gamma.applyGamma = true;
+      gamma.applyGamma = false;
       gamma.gamma = 1.0/2.2;
       gamma.divisor = renderCam->iterations;
       outputImage.setGammaSettings(gamma);
@@ -201,7 +210,7 @@ void runCuda(){
 	void display(){
 		runCuda();
 
-		string title = "565Raytracer | " + utilityCore::convertIntToString(iterations) + " Frames";
+		string title = "Raytracer | " + utilityCore::convertIntToString(iterations) + " Frames";
 		glutSetWindowTitle(title.c_str());
 
 		glBindBuffer( GL_PIXEL_UNPACK_BUFFER, pbo);
@@ -216,6 +225,8 @@ void runCuda(){
 
 		glutPostRedisplay();
 		glutSwapBuffers();
+
+		cudaDeviceReset();
 	}
 
 	void keyboard(unsigned char key, int x, int y)
@@ -259,7 +270,7 @@ void runCuda(){
 		glutInit(&argc, argv);
 		glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
 		glutInitWindowSize(width, height);
-		glutCreateWindow("565Raytracer");
+		glutCreateWindow("Raytracer");
 
 		// Init GLEW
 		glewInit();

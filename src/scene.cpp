@@ -26,6 +26,9 @@ scene::scene(string filename){
 				}else if(strcmp(tokens[0].c_str(), "CAMERA")==0){
 				    loadCamera();
 				    cout << " " << endl;
+				} else if(strcmp(tokens[0].c_str(), "POINTLIGHT")==0){
+				    loadPointLight(tokens[1]);
+				    cout << " " << endl;
 				}
 			}
 		}
@@ -116,6 +119,7 @@ int scene::loadObject(string objectid){
 	newObject.scales = new glm::vec3[frameCount];
 	newObject.transforms = new cudaMat4[frameCount];
 	newObject.inverseTransforms = new cudaMat4[frameCount];
+	newObject.inverseTransposeTransforms = new cudaMat4[frameCount];
 	for(int i=0; i<frameCount; i++){
 		newObject.translations[i] = translations[i];
 		newObject.rotations[i] = rotations[i];
@@ -123,6 +127,7 @@ int scene::loadObject(string objectid){
 		glm::mat4 transform = utilityCore::buildTransformationMatrix(translations[i], rotations[i], scales[i]);
 		newObject.transforms[i] = utilityCore::glmMat4ToCudaMat4(transform);
 		newObject.inverseTransforms[i] = utilityCore::glmMat4ToCudaMat4(glm::inverse(transform));
+		newObject.inverseTransposeTransforms[i] = utilityCore::glmMat4ToCudaMat4(glm::inverse(glm::transpose(transform)));
 	}
 	
         objects.push_back(newObject);
@@ -259,5 +264,36 @@ int scene::loadMaterial(string materialid){
 		}
 		materials.push_back(newMaterial);
 		return 1;
+	}
+}
+
+int scene::loadPointLight(string lightid)
+{
+	int id = atoi(lightid.c_str());
+	if(id!=pointLights.size())
+	{
+		cout << "ERROR: POINT LIGHT ID does not match expected number of point lights" << endl;
+		return -1;
+	}
+	else
+	{
+		cout << "Loading Point Light " << id << "..." << endl;
+		PointLight newPointLight;
+
+		//load static properties
+		for(int i=0; i<2; ++i)
+		{
+			string line;
+			getline(fp_in,line);
+			vector<string> tokens = utilityCore::tokenizeString(line);
+			if(strcmp(tokens[0].c_str(), "RGB")==0){
+				glm::vec3 color( atof(tokens[1].c_str()), atof(tokens[2].c_str()), atof(tokens[3].c_str()) );
+				newPointLight.color = color;
+			}else if(strcmp(tokens[0].c_str(), "POS")==0){
+				newPointLight.position = glm::vec3( atof(tokens[1].c_str()), atof(tokens[2].c_str()), atof(tokens[3].c_str()) );				  
+			}
+		}
+
+		pointLights.push_back(newPointLight);
 	}
 }

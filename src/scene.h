@@ -22,12 +22,14 @@ private:
     int loadMaterial(string materialid);
     int loadObject(string objectid);
     int loadCamera();
+	int loadPointLight(string lightid);
 public:
     scene(string filename);
     ~scene();
 
     vector<geom> objects;
     vector<material> materials;
+	vector<PointLight> pointLights;
     camera renderCam;
 };
 

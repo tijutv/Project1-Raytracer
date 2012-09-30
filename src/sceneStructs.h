@@ -27,6 +27,7 @@ struct geom {
 	glm::vec3* scales;
 	cudaMat4* transforms;
 	cudaMat4* inverseTransforms;
+	cudaMat4* inverseTransposeTransforms;
 };
 
 struct staticGeom {
@@ -37,6 +38,7 @@ struct staticGeom {
 	glm::vec3 scale;
 	cudaMat4 transform;
 	cudaMat4 inverseTransform;
+	cudaMat4 inverseTransposeTransform;
 };
 
 struct cameraData {
@@ -71,6 +73,32 @@ struct material{
 	glm::vec3 absorptionCoefficient;
 	float reducedScatterCoefficient;
 	float emittance;
+};
+
+struct PointLight
+{
+	glm::vec3 position;
+	glm::vec3 color;
+};
+
+struct RayInPackage
+{
+	ray rayValue;
+	int index;
+	bool isInside;
+	float reductionFactor;
+};
+
+struct RayOutPackage {
+	bool isPresent;
+	int index;
+	ray rayValue;
+	bool isTransPresent;
+	ray rayValueTrans;
+	bool isInsideObject;
+	glm::vec3 color;
+	int numRays;
+	float reductionFactor;
 };
 
 #endif //CUDASTRUCTS_H
